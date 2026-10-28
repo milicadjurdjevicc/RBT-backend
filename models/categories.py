@@ -1,4 +1,5 @@
-﻿from sqlalchemy import Column, Integer, String
+﻿from pydantic import BaseModel
+from sqlalchemy import Column, Integer, String
 from database import Base
 
 
@@ -8,3 +9,7 @@ class Category(Base):
     id = Column(Integer, primary_key=True, unique=True, nullable=False)
     name = Column(String(30), unique=True, nullable=False)
     color = Column(String(6), nullable=False)
+
+class CategoryModel(BaseModel):
+    name: str
+    color: str
