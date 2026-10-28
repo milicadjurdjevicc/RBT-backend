@@ -1,0 +1,5 @@
+type,amount,date,description,category
+expense,42.75,2026-02-08,February groceries,Food
+income,725.00,2026-05-12,Freelance payment,Freelance
+expense,88.40,2026-08-21,Train tickets,Transport
+expense,134.25,2026-11-06,Heating bill,Utilities

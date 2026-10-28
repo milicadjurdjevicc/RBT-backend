@@ -5,6 +5,7 @@ from datetime import date
 
 from fastapi import APIRouter, Response, UploadFile, File
 from starlette import status
+from sqlalchemy import func
 
 from database import SessionLocal
 from models.categories import Category
@@ -19,7 +20,7 @@ def check_transaction_fields(new_transaction: TransactionModel):
     if new_transaction.type not in ("income", "expense"):
         return 1, "Invalid transaction type", None
 
-    if new_transaction.amount < 0 or new_transaction.amount > 1000000:
+    if new_transaction.amount <= 0 or new_transaction.amount > 1000000:
         return 1, "Transaction amount must be between 0 and 1000000", None
     try:
         parsed_date = date.fromisoformat(new_transaction.date)
@@ -102,18 +103,18 @@ def change_transaction(body: ChangeTransaction, response: Response):
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {transaction.category} does not exist"}
 
-        updated = db.query(Transaction).filter(Transaction.id == body.id).update(
-            {Transaction.category: category.id, Transaction.date: parsed_date, Transaction.amount: transaction.amount,
-             Transaction.description: transaction.description, Transaction.type: transaction.type}
-        )
-
-        if updated == 0:
+        existing_transaction = db.query(Transaction).filter(
+            Transaction.id == body.id
+        ).first()
+        if existing_transaction is None:
             response.status_code=status.HTTP_400_BAD_REQUEST
             return {"ERROR": "Transaction does not exist"}
-        elif updated != 1:
-            response.status_code=status.HTTP_400_BAD_REQUEST
-            return {"ERROR": "Error updating transaction"}
 
+        existing_transaction.category = category.id
+        existing_transaction.date = parsed_date
+        existing_transaction.amount = transaction.amount
+        existing_transaction.description = transaction.description
+        existing_transaction.type = transaction.type
         db.commit()
         return {"DONE": "Transaction updated successfully"}
 
@@ -144,7 +145,7 @@ def delete_transaction(body: TransactionDetails, response: Response):
     finally:
         db.close()
 
-@router.get("/list")
+@router.get("")
 def list_transactions(body: ListTransations, response: Response):
     db = SessionLocal()
     offset = (body.page-1) * PAGE_SIZE
@@ -222,7 +223,9 @@ async def import_transactions(response: Response, file: UploadFile = File(...)):
                 errors.append({"line": i, "ERROR": message})
                 continue
 
-            category = db.query(Category).filter(Category.name == transaction.category.lower()).first()
+            category = db.query(Category).filter(
+                func.lower(Category.name) == transaction.category.lower()
+            ).first()
             if category is None:
                 errors.append({"line": i, "ERROR": f"Category {transaction.category} does not exist"})
                 continue
@@ -244,4 +247,3 @@ async def import_transactions(response: Response, file: UploadFile = File(...)):
 
     finally:
         db.close()
-

@@ -8,7 +8,7 @@ class Category(Base):
 
     id = Column(Integer, primary_key=True, unique=True, nullable=False)
     name = Column(String(30), unique=True, nullable=False)
-    color = Column(String(6), nullable=False)
+    color = Column(String(7), nullable=False)
 
 class CategoryModel(BaseModel):
     name: str

@@ -1,5 +1,4 @@
-﻿
-from pydantic import BaseModel
+﻿from pydantic import BaseModel
 from sqlalchemy import Column, DateTime, Enum, Integer, Numeric, String
 from database import Base
 
@@ -20,5 +19,5 @@ class TransactionModel(BaseModel):
     type:str
     amount:float
     date:str
-    description:str
+    description: str = ""
     category:str

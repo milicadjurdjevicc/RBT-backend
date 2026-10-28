@@ -2,6 +2,7 @@
 import traceback
 
 from fastapi import APIRouter, Response, status
+from sqlalchemy import func
 
 from database import SessionLocal
 from models.budget import Budget
@@ -27,7 +28,9 @@ def insert(new_category: CategoryModel, response: Response):
 
     db = SessionLocal()
     try:
-        cat = db.query(Category).filter(Category.name == new_category.name).first()
+        cat = db.query(Category).filter(
+            func.lower(Category.name) == new_category.name.lower()
+        ).first()
         if cat is not None:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {new_category.name} already exists"}
@@ -35,7 +38,6 @@ def insert(new_category: CategoryModel, response: Response):
         cat = Category(name=new_category.name, color=new_category.color)
         db.add(cat)
         db.commit()
-        response.status_code = status.HTTP_201_CREATED
         return {"DONE": f"Category {new_category.name} created successfully"}
 
     except Exception as e:
@@ -64,18 +66,19 @@ def change_name(body: ChangeCategoryName, response: Response):
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {old_name} does not exist"}
 
-        cat = db.query(Category).filter(Category.name == new_name).first()
+        cat = db.query(Category).filter(
+            func.lower(Category.name) == new_name.lower()
+        ).first()
         if cat is not None:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {new_name} already exists"}
 
-        updated = db.query(Category).filter(Category.name == old_name).update(
-            {"name": new_name}, synchronize_session=False
-        )
-        if updated != 1:
+        category = db.query(Category).filter(Category.name == old_name).first()
+        if category is None:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Error updating category"}
 
+        category.name = new_name
         db.commit()
         return{"DONE": f"Category {new_name} changed successfully"}
 
@@ -99,14 +102,7 @@ def change_color(body: ChangeCategoryColor, response: Response):
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {body.name} does not exist"}
 
-        updated = db.query(Category).filter(Category.name == body.name).update(
-            {"color": body.new_color}, synchronize_session=False
-        )
-
-        if updated != 1:
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"ERROR": f"Error updating category"}
-
+        category.color = body.new_color
         db.commit()
         return {"DONE": f"Category {body.name} changed successfully"}
     except Exception as e:

@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response
 from starlette import status
 
 from database import SessionLocal
@@ -62,16 +62,16 @@ def change_budget(body: ChangeBudget, response:Response):
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Category {body.category} does not exist"}
 
-        updated = db.query(Budget).filter(Budget.category == category.id, Budget.month == body.month, Budget.year == body.year).update(
-            {Budget.amount: body.amount}
-        )
-        if updated == 0:
+        budget = db.query(Budget).filter(
+            Budget.category == category.id,
+            Budget.month == body.month,
+            Budget.year == body.year,
+        ).first()
+        if budget is None:
             response.status_code = status.HTTP_400_BAD_REQUEST
             return {"ERROR": f"Budget for category {body.category} for {body.month + 1}/{body.year} does not exist"}
-        elif updated != 1:
-            response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"ERROR": "Error updating budget"}
 
+        budget.amount = body.amount
         db.commit()
         return {"DONE": "Budget updated successfully"}
 
@@ -122,4 +122,3 @@ def list_budgets(body: ListBudget, response: Response):
         return {"ERROR": "Database error"}
     finally:
         db.close()
-

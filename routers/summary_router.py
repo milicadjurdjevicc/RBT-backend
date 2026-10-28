@@ -50,9 +50,6 @@ def get_montly_summary(body: MonthlySummary, response: Response):
                 extract("year", Transaction.date) == body.year,
             ).scalar()
 
-            print(incomes)
-            print(expenses)
-
             total_income += incomes
             total_expense += expenses
 
@@ -79,6 +76,8 @@ def get_montly_summary(body: MonthlySummary, response: Response):
     except Exception as e:
         db.rollback()
         print(f"Database Error: {e}")
-        print(traceback.format_exc())
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return {"ERROR": "Database Error"}
+
+    finally:
+        db.close()
