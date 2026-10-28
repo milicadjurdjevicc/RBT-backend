@@ -3,13 +3,15 @@
 from routers.budget_router import router as budget_router
 from routers.categories_router import router as categories_router
 from routers.transactions_router import router as transactions_router
+from routers.summary_router import router as summary_router
+
 
 app = FastAPI()
 
 app.include_router(categories_router)
 app.include_router(transactions_router)
 app.include_router(budget_router)
-
+app.include_router(summary_router)
 
 @app.get("/")
 def root():

@@ -13,6 +13,7 @@ class Transaction(Base):
     date = Column(DateTime, nullable=False)
     description = Column(String(200), nullable=True)
     category = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False)
 
 class TransactionModel(BaseModel):
 

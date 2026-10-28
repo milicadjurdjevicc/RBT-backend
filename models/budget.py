@@ -10,6 +10,7 @@ class Budget(Base):
     month = Column(Integer, nullable=False)
     category = Column(Integer, nullable=False)
     amount = Column(Numeric(9, 2), nullable=False)
+    year = Column(Integer, nullable=False)
 
 
 class BudgetModel(BaseModel):
@@ -17,3 +18,4 @@ class BudgetModel(BaseModel):
     month: int
     category: str
     amount: float
+    year: int

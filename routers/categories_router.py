@@ -18,31 +18,31 @@ def insert(new_category: CategoryModel, response: Response):
     new_category.name = new_category.name.strip()
     if len(new_category.name) > 30 or len(new_category.name) < 1:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"message": "Category name must be between 1 and 30 characters"}
+        return {"ERROR": "Category name must be between 1 and 30 characters"}
 
     color_regex = re.compile(r"^#([A-Fa-f0-9]{6})$")
     if color_regex.fullmatch(new_category.color) is None:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"message": "Invalid color format"}
+        return {"ERROR": "Invalid color format"}
 
     db = SessionLocal()
     try:
         cat = db.query(Category).filter(Category.name == new_category.name).first()
         if cat is not None:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {new_category.name} already exists"}
+            return {"ERROR": f"Category {new_category.name} already exists"}
 
         cat = Category(name=new_category.name, color=new_category.color)
         db.add(cat)
         db.commit()
         response.status_code = status.HTTP_201_CREATED
-        return {"message": f"Category {new_category.name} created successfully"}
+        return {"DONE": f"Category {new_category.name} created successfully"}
 
     except Exception as e:
         db.rollback()
         print(f"Database error: {e}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": "Database error"}
+        return {"ERROR": "Database error"}
 
     finally:
         db.close()
@@ -53,54 +53,51 @@ def change_name(body: ChangeCategoryName, response: Response):
     new_name = body.new_name.strip()
     old_name = body.old_name.strip()
 
-    if new_name == old_name:
-        return {"message": "New name is the same as old name"}
-
     if len(new_name) > 30 or len(new_name) < 1:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"message": "Category name must be between 1 and 30 characters"}
+        return {"ERROR": "Category name must be between 1 and 30 characters"}
 
     db = SessionLocal()
     try:
         cat = db.query(Category).filter(Category.name == old_name).first()
         if cat is None:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {old_name} does not exist"}
+            return {"ERROR": f"Category {old_name} does not exist"}
 
         cat = db.query(Category).filter(Category.name == new_name).first()
         if cat is not None:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {new_name} already exists"}
+            return {"ERROR": f"Category {new_name} already exists"}
 
         updated = db.query(Category).filter(Category.name == old_name).update(
             {"name": new_name}, synchronize_session=False
         )
         if updated != 1:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Error while updating"}
+            return {"ERROR": f"Error updating category"}
 
         db.commit()
-        return{"message": f"Category {new_name} changed successfully"}
+        return{"DONE": f"Category {new_name} changed successfully"}
 
     except Exception as e:
         db.rollback()
         print(f"Database error: {e}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": "Database error"}
+        return {"ERROR": "Database error"}
 
 @router.put("/change/color")
 def change_color(body: ChangeCategoryColor, response: Response):
     color_regex = re.compile(r"^#([A-Fa-f0-9]{6})$")
     if color_regex.fullmatch(body.new_color) is None:
         response.status_code = status.HTTP_400_BAD_REQUEST
-        return {"message": "Invalid color format"}
+        return {"ERROR": "Invalid color format"}
 
     db = SessionLocal()
     try:
         category = db.query(Category).filter(Category.name == body.name).first()
         if category is None:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {body.name} does not exist"}
+            return {"ERROR": f"Category {body.name} does not exist"}
 
         updated = db.query(Category).filter(Category.name == body.name).update(
             {"color": body.new_color}, synchronize_session=False
@@ -108,15 +105,15 @@ def change_color(body: ChangeCategoryColor, response: Response):
 
         if updated != 1:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Error while updating"}
+            return {"ERROR": f"Error updating category"}
 
         db.commit()
-        return {"message": f"Category {body.name} changed successfully"}
+        return {"DONE": f"Category {body.name} changed successfully"}
     except Exception as e:
         db.rollback()
         print(f"Database error: {e}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": "Database error"}
+        return {"ERROR": "Database error"}
 
     finally:
         db.close()
@@ -131,7 +128,7 @@ def get_categories(response: Response):
         db.rollback()
         print(f"Database error: {e}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": "Database error"}
+        return {"ERROR": "Database error"}
     finally:
         db.close()
 
@@ -142,23 +139,23 @@ def delete_category(body: DeleteCategory, response: Response):
         category = db.query(Category).filter(Category.name == body.category).first()
         if category is None:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {body.category} does not exist"}
+            return {"ERROR": f"Category {body.category} does not exist"}
 
         transactions = db.query(Transaction).filter(Transaction.category == category.id).all()
         if transactions:
             response.status_code = status.HTTP_400_BAD_REQUEST
-            return {"message": f"Category {category.name} has transactions and cannot be deleted"}
+            return {"ERROR": f"Category {category.name} has transactions and cannot be deleted"}
 
         db.query(Budget).filter(Budget.category == category.id).delete(synchronize_session=False)
         db.delete(category)
 
         db.commit()
-        return {"message": f"Category {category.name} deleted successfully"}
+        return {"DONE": f"Category {category.name} deleted successfully"}
 
     except Exception as e:
         db.rollback()
         print(f"Database error: {e}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-        return {"message": "Database error"}
+        return {"ERROR": "Database error"}
     finally:
         db.close()
